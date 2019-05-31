@@ -10,6 +10,7 @@ import UIKit
 
 open class WSTagView: UIView {
     fileprivate let textLabel = UILabel()
+    fileprivate let iconImageView = UIImageView()
 
     open var displayText: String = "" {
         didSet {
@@ -103,7 +104,11 @@ open class WSTagView: UIView {
         textLabel.textColor = .white
         textLabel.backgroundColor = .clear
         addSubview(textLabel)
-
+        
+        iconImageView.frame = CGRect(x: textLabel.frame.width, y: textLabel.frame.origin.y, width: 7.0, height: 7.0)
+        iconImageView.image = UIImage(named: "iconTagdelete")
+        addSubview(iconImageView)
+        
         self.displayText = tag.text
         updateLabelText()
 
@@ -149,7 +154,7 @@ open class WSTagView: UIView {
     // MARK: - Size Measurements
     open override var intrinsicContentSize: CGSize {
         let labelIntrinsicSize = textLabel.intrinsicContentSize
-        return CGSize(width: labelIntrinsicSize.width + layoutMargins.left + layoutMargins.right,
+        return CGSize(width: labelIntrinsicSize.width + layoutMargins.left + layoutMargins.right + 10,
                       height: labelIntrinsicSize.height + layoutMargins.top + layoutMargins.bottom)
     }
 
@@ -184,6 +189,7 @@ open class WSTagView: UIView {
     open override func layoutSubviews() {
         super.layoutSubviews()
         textLabel.frame = bounds.inset(by: layoutMargins)
+        iconImageView.frame.origin = CGPoint(x: textLabel.frame.width, y: (textLabel.frame.height / 2.0) - 2.5)
         if frame.width == 0 || frame.height == 0 {
             frame.size = self.intrinsicContentSize
         }

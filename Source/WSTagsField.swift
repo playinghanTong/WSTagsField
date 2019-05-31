@@ -233,6 +233,8 @@ open class WSTagsField: UIScrollView {
      * or nil if the text shouldn't be accepted.
      */
     open var onVerifyTag: ((WSTagsField, _ text: String) -> Bool)?
+    
+    open var onAlertTag: ((WSTagsField, _ text: String?) -> Void)?
 
     /**
      * Called when the view has updated its own height. If you are
@@ -413,6 +415,10 @@ open class WSTagsField: UIScrollView {
 
         updatePlaceholderTextVisibility()
         repositionViews()
+        if self.tags.count == 4 {
+            self.textField.endEditing(true)
+            self.endEditing()
+        }
     }
 
     open func removeTag(_ tag: String) {
@@ -508,6 +514,9 @@ open class WSTagsField: UIScrollView {
         }
 
         onDidSelectTagView?(self, tagView)
+        if let index = self.tagViews.firstIndex(of: tagView) {
+            self.removeTagAtIndex(index)
+        }
     }
 
     open func unselectAllTagViewsAnimated(_ animated: Bool = false) {
@@ -753,7 +762,18 @@ extension WSTagsField {
         }
         return contentInset.top + contentInset.bottom + Constants.STANDARD_ROW_HEIGHT * CGFloat(numberOfLines) + spaceBetweenLines * CGFloat(numberOfLines - 1)
     }
-
+    
+    private func hasCharacter(text: String) -> Bool {
+        do {
+            let regex = try NSRegularExpression(pattern: "[a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\\s]", options: .caseInsensitive)
+            if let _ = regex.firstMatch(in: text, options: NSRegularExpression.MatchingOptions.reportCompletion, range: NSMakeRange(0, text.count)) {
+                return true
+            }
+        } catch {
+            return false
+        }
+        return false
+    }
 }
 
 extension WSTagsField: UITextFieldDelegate {
@@ -769,8 +789,13 @@ extension WSTagsField: UITextFieldDelegate {
 
     public func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if acceptTagOption == .return && onShouldAcceptTag?(self) ?? true {
-            tokenizeTextFieldText()
-            return true
+            if let count = textField.text?.count, count <= 1 {
+                onAlertTag?(self, textField.text)
+                return false
+            } else {
+                tokenizeTextFieldText()
+                return true
+            }
         }
         if let textFieldShouldReturn = textDelegate?.textFieldShouldReturn, textFieldShouldReturn(textField) {
             tokenizeTextFieldText()
@@ -780,17 +805,26 @@ extension WSTagsField: UITextFieldDelegate {
     }
 
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if acceptTagOption == .comma && string == "," && onShouldAcceptTag?(self) ?? true {
-            tokenizeTextFieldText()
+        guard let text = textField.text else { return true }
+        if self.hasCharacter(text: string) || string == "_" || string == "," || string == "" {
+            if (string == "," || string == " ") && onShouldAcceptTag?(self) ?? true {
+                if text.count <= 1, string != "" {
+                    onAlertTag?(self, textField.text)
+                } else {
+                    tokenizeTextFieldText()
+                }
+                return false
+            }
+            if text.count >= 20, string != "" {
+                onAlertTag?(self, textField.text)
+                return false
+            }
+            return true
+        }
+        else {
             return false
         }
-        if acceptTagOption == .space && string == " " && onShouldAcceptTag?(self) ?? true {
-            tokenizeTextFieldText()
-            return false
-        }
-        return true
     }
-
 }
 
 public func == (lhs: UITextField, rhs: WSTagsField) -> Bool {
