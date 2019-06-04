@@ -236,6 +236,7 @@ open class WSTagsField: UIScrollView {
     
     open var onAlertTag: ((WSTagsField, _ text: String?) -> Void)?
 
+    open var onRemoveTag: ((WSTagsField, _ index: Int?) -> Void)?
     /**
      * Called when the view has updated its own height. If you are
      * not using Autolayout, you should use this method to update the
@@ -438,9 +439,8 @@ open class WSTagsField: UIScrollView {
         tagView.removeFromSuperview()
         self.tagViews.remove(at: index)
 
-        let removedTag = self.tags[index]
         self.tags.remove(at: index)
-        onDidRemoveTag?(self, removedTag)
+        onRemoveTag?(self, index)
 
         updatePlaceholderTextVisibility()
         repositionViews()
